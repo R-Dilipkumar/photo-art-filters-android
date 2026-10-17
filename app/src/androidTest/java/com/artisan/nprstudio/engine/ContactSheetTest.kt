@@ -5,10 +5,12 @@ import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
+import android.graphics.Path
 import android.graphics.Rect
 import android.os.SystemClock
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import com.artisan.nprstudio.R
 import com.artisan.nprstudio.model.Finish
 import com.artisan.nprstudio.util.BitmapRepository
 import kotlinx.coroutines.runBlocking
@@ -28,15 +30,39 @@ class ContactSheetTest {
 
     private val context = InstrumentationRegistry.getInstrumentation().targetContext
     private val catalog = ShaderCatalog.load(context.assets)
-    private val outDir = File(context.getExternalFilesDir(null), "contact").apply {
-        deleteRecursively()
-        mkdirs()
+    private val outDir = File(context.getExternalFilesDir(null), "contact")
+
+    // Only when asked for (tools/contact_sheets.sh passes this), not in every test run.
+    private fun requested() =
+        assumeTrue(InstrumentationRegistry.getArguments().getString("contactSheets") == "true")
+
+    /** The launcher icon as a 512 px rounded square, e.g. for the README. */
+    @Test
+    fun renderAppIcon() {
+        requested()
+        val size = 512
+        val icon = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(icon)
+        canvas.clipPath(Path().apply {
+            addRoundRect(0f, 0f, size.toFloat(), size.toFloat(), size * 0.22f, size * 0.22f, Path.Direction.CW)
+        })
+        // Adaptive layers are 108 dp with 18 dp of bleed on each side around the visible 72 dp.
+        val bleed = size * 18 / 72
+        for (id in listOf(R.drawable.ic_launcher_background, R.drawable.ic_launcher_foreground)) {
+            val layer = context.getDrawable(id)!!
+            layer.setBounds(-bleed, -bleed, size + bleed, size + bleed)
+            layer.draw(canvas)
+        }
+        File(context.getExternalFilesDir(null), "icon.png").outputStream().use {
+            icon.compress(Bitmap.CompressFormat.PNG, 100, it)
+        }
     }
 
     @Test
     fun renderContactSheetsAndTimings() = runBlocking {
-        // Only when asked for (tools/contact_sheets.sh passes this), not in every test run.
-        assumeTrue(InstrumentationRegistry.getArguments().getString("contactSheets") == "true")
+        requested()
+        outDir.deleteRecursively()
+        outDir.mkdirs()
         val photo = File(context.getExternalFilesDir(null), "test_photo.jpg")
         val preview = if (photo.exists()) {
             val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
@@ -92,8 +118,8 @@ class ContactSheetTest {
                     canvas.drawBitmap(out, null, Rect(x, y, x + cellW, y + cellH), null)
                     canvas.drawText("${def.category}: ${def.name}", x + 5f, y + cellH + 19f, paint)
                 }
-                File(outDir, "sheet_%02d.png".format(sheetIndex + 1)).outputStream().use {
-                    sheet.compress(Bitmap.CompressFormat.PNG, 100, it)
+                File(outDir, "sheet_%02d.jpg".format(sheetIndex + 1)).outputStream().use {
+                    sheet.compress(Bitmap.CompressFormat.JPEG, 88, it)
                 }
             }
         }

@@ -28,4 +28,5 @@ fi
 mkdir -p "$OUT"
 rm -rf "$OUT/contact"
 "$ADB" pull "$APP_FILES/contact" "$(native "$OUT")" >/dev/null
+"$ADB" pull "$APP_FILES/icon.png" "$(native "$OUT/contact")" >/dev/null 2>&1 || true
 echo "Sheets in $OUT/contact"

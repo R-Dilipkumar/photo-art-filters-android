@@ -7,6 +7,8 @@
     <!-- No permissions at all: fully offline. Saving uses MediaStore (no permission on API 29+). -->
     <application
         android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher_round"
         android:label="Artisan NPR Studio"
         android:supportsRtl="true"
         android:theme="@android:style/Theme.Material.NoActionBar">

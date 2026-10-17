@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- One-colour version for Android 13+ themed icons: blades with gaps, open centre. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <group>
+        <path
+            android:fillColor="#FFFFFFFF"
+            android:pathData="M63.29,52.02 L60.36,61.06 L52.59,84.97 A31,31 0 0,0 80.11,70.71 Z" />
+        <path
+            android:fillColor="#FFFFFFFF"
+            android:pathData="M60.36,61.06 L51.06,63.04 L26.48,68.26 A31,31 0 0,0 52.59,84.97 Z" />
+        <path
+            android:fillColor="#FFFFFFFF"
+            android:pathData="M51.06,63.04 L44.71,55.98 L27.89,37.29 A31,31 0 0,0 26.48,68.26 Z" />
+        <path
+            android:fillColor="#FFFFFFFF"
+            android:pathData="M44.71,55.98 L47.64,46.94 L55.41,23.03 A31,31 0 0,0 27.89,37.29 Z" />
+        <path
+            android:fillColor="#FFFFFFFF"
+            android:pathData="M47.64,46.94 L56.94,44.96 L81.52,39.74 A31,31 0 0,0 55.41,23.03 Z" />
+        <path
+            android:fillColor="#FFFFFFFF"
+            android:pathData="M56.94,44.96 L63.29,52.02 L80.11,70.71 A31,31 0 0,0 81.52,39.74 Z" />
+    </group>
+</vector>

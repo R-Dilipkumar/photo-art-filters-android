@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  A camera aperture whose six blades are six paint colours: photo meets art.
+  Each blade runs from one edge of the inner hexagon (r = 9.5), along that edge's
+  line, out to the rim (r = 31, centre 54,54).
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Rim shadow -->
+    <path
+        android:fillColor="#40000000"
+        android:pathData="M54,56m-33,0a33,33 0,1 1,66 0a33,33 0,1 1,-66 0" />
+
+    <!-- Blades: rose, orange, yellow, green, cyan, violet. Dark strokes make the gaps. -->
+    <path
+        android:fillColor="#FFF43F5E"
+        android:pathData="M63.29,52.02 L60.36,61.06 L52.59,84.97 A31,31 0 0,0 80.11,70.71 Z"
+        android:strokeColor="#FF1B1740"
+        android:strokeLineJoin="round"
+        android:strokeWidth="1.4" />
+    <path
+        android:fillColor="#FFF97316"
+        android:pathData="M60.36,61.06 L51.06,63.04 L26.48,68.26 A31,31 0 0,0 52.59,84.97 Z"
+        android:strokeColor="#FF1B1740"
+        android:strokeLineJoin="round"
+        android:strokeWidth="1.4" />
+    <path
+        android:fillColor="#FFFACC15"
+        android:pathData="M51.06,63.04 L44.71,55.98 L27.89,37.29 A31,31 0 0,0 26.48,68.26 Z"
+        android:strokeColor="#FF1B1740"
+        android:strokeLineJoin="round"
+        android:strokeWidth="1.4" />
+    <path
+        android:fillColor="#FF22C55E"
+        android:pathData="M44.71,55.98 L47.64,46.94 L55.41,23.03 A31,31 0 0,0 27.89,37.29 Z"
+        android:strokeColor="#FF1B1740"
+        android:strokeLineJoin="round"
+        android:strokeWidth="1.4" />
+    <path
+        android:fillColor="#FF06B6D4"
+        android:pathData="M47.64,46.94 L56.94,44.96 L81.52,39.74 A31,31 0 0,0 55.41,23.03 Z"
+        android:strokeColor="#FF1B1740"
+        android:strokeLineJoin="round"
+        android:strokeWidth="1.4" />
+    <path
+        android:fillColor="#FF8B5CF6"
+        android:pathData="M56.94,44.96 L63.29,52.02 L80.11,70.71 A31,31 0 0,0 81.52,39.74 Z"
+        android:strokeColor="#FF1B1740"
+        android:strokeLineJoin="round"
+        android:strokeWidth="1.4" />
+
+    <!-- Soft gloss fading from the upper-left across the whole disc (no hard edges) -->
+    <path android:pathData="M54,54m-31,0a31,31 0,1 1,62 0a31,31 0,1 1,-62 0">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="linear"
+                android:startX="28"
+                android:startY="28"
+                android:endX="62"
+                android:endY="62"
+                android:startColor="#33FFFFFF"
+                android:endColor="#00FFFFFF" />
+        </aapt:attr>
+    </path>
+
+    <!-- The lens seen through the opening -->
+    <path
+        android:pathData="M63.29,52.02 L60.36,61.06 L51.06,63.04 L44.71,55.98 L47.64,46.94 L56.94,44.96 Z"
+        android:strokeColor="#FF1B1740"
+        android:strokeLineJoin="round"
+        android:strokeWidth="1.4">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="radial"
+                android:centerX="51"
+                android:centerY="51"
+                android:gradientRadius="12"
+                android:startColor="#FF3B82F6"
+                android:endColor="#FF0B1026" />
+        </aapt:attr>
+    </path>
+    <path
+        android:fillColor="#E6FFFFFF"
+        android:pathData="M50.5,51m-2.2,0a2.2,2.2 0,1 1,4.4 0a2.2,2.2 0,1 1,-4.4 0" />
+
+    <!-- Rim -->
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M54,54m-31,0a31,31 0,1 1,62 0a31,31 0,1 1,-62 0"
+        android:strokeColor="#FFF8FAFC"
+        android:strokeWidth="2.2" />
+</vector>

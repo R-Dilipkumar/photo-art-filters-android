@@ -1,12 +1,26 @@
-# Artisan NPR Studio
+<p align="center">
+  <img src="docs/images/icon.png" width="128" alt="Artisan NPR Studio icon">
+</p>
 
-Turn your photos into art on your phone. 134 styles, from pencil sketches, oil paint and watercolour to comic, retro, film and glitch looks. Fully offline, with no AI models.
+<h1 align="center">Artisan NPR Studio</h1>
 
-![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)
-![Platform: Android 10+](https://img.shields.io/badge/platform-Android%2010%2B-3DDC84.svg)
-![Kotlin](https://img.shields.io/badge/Kotlin-Jetpack%20Compose-7F52FF.svg)
-![Styles: 134](https://img.shields.io/badge/styles-134-orange.svg)
-![Status: early development](https://img.shields.io/badge/status-early%20development-orange.svg)
+<p align="center">
+  <b>Photo art filters for Android.</b> Turn your photos into pencil sketches, oil paintings, watercolours, comics, retro pixels, film looks and more, with 134 styles.<br>
+  Fully offline. No AI models, no accounts, no permissions.
+</p>
+
+<p align="center">
+  <a href="https://github.com/R-Dilipkumar/photo-art-filters-android/releases/latest"><img src="https://img.shields.io/github/v/release/R-Dilipkumar/photo-art-filters-android?label=release" alt="Latest release"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT"></a>
+  <img src="https://img.shields.io/badge/platform-Android%2010%2B-3DDC84.svg" alt="Platform: Android 10+">
+  <img src="https://img.shields.io/badge/Kotlin-Jetpack%20Compose-7F52FF.svg" alt="Kotlin + Jetpack Compose">
+  <img src="https://img.shields.io/badge/OpenGL%20ES-3.0-5586A4.svg" alt="OpenGL ES 3.0">
+  <img src="https://img.shields.io/badge/styles-134-orange.svg" alt="134 styles">
+</p>
+
+<p align="center">
+  <img src="docs/images/screenshot.jpg" width="300" alt="App screenshot: a landscape in the Ballpoint Pen style, with controls, style thumbnails and the category dial">
+</p>
 
 ## Features
 
@@ -15,10 +29,21 @@ Turn your photos into art on your phone. 134 styles, from pencil sketches, oil p
 - **Finish tab, shared by all styles:** strength (blend with the photo), brightness, contrast, saturation, optional ink outlines, and Floyd–Steinberg dithering.
 - **Surprise** picks random settings. **Reset** goes back to the defaults.
 - Press and hold the picture to compare it with the original.
-- Export a high-resolution copy (up to 3200 px) to `Pictures/ArtisanNPR`. It looks the same as the preview.
-- Works with no internet and asks for no permissions.
+- **Export** a high-resolution copy (up to 3200 px) to `Pictures/ArtisanNPR`. It looks the same as the preview.
+- Fast: one background GPU thread keeps everything loaded, so a slider move just redraws the picture.
+- Works with no internet and asks for no permissions. The APK is about 2 MB.
+
+## Download
+
+**[Download the latest APK](https://github.com/R-Dilipkumar/photo-art-filters-android/releases/latest/download/photo-art-filters-android.apk)**. Or see all [releases](https://github.com/R-Dilipkumar/photo-art-filters-android/releases).
+
+1. Download the APK on your phone.
+2. Open it. If Android asks, allow installs from your browser or file manager.
+3. Open **Artisan NPR Studio**, tap **Load** to pick a photo, turn the dial, and tap a style.
 
 ## Styles
+
+<p align="center"><img src="docs/images/styles-2.jpg" width="100%" alt="Ink, Paint and Watercolor styles on the built-in sample picture"></p>
 
 | Group | Styles |
 |---|---|
@@ -35,15 +60,24 @@ Turn your photos into art on your phone. 134 styles, from pencil sketches, oil p
 | Distort (9) | Fisheye, Frosted Glass, Glass Blocks, Kaleidoscope, Mirror, Tiny Planet, Twirl, Water Ripple, Wave Warp |
 | Stylize (10) | Black & White Threshold, Bokeh Blur, Emboss, Gold Relief, Gradient Map, Oil Slick, Paper Cut-Out, Posterize, Silhouette, Topographic Map |
 
-## Download
+<details>
+<summary><b>See every style</b> (contact sheets on the built-in sample picture)</summary>
 
-No release yet; the app is in early development. Build it from source for now (see below).
+![Sketch and Ink](docs/images/styles-1.jpg)
+![Ink, Paint and Watercolor](docs/images/styles-2.jpg)
+![Watercolor, Print and Comic](docs/images/styles-3.jpg)
+![Comic and Mosaic](docs/images/styles-4.jpg)
+![Retro and Film](docs/images/styles-5.jpg)
+![Film, Glitch and Distort](docs/images/styles-6.jpg)
+![Distort and Stylize](docs/images/styles-7.jpg)
+
+</details>
 
 ## How it works
 
 Each style is a small GPU program (an OpenGL ES 3.0 fragment shader) in its own file under `app/src/main/assets/shaders/`. Many are well-known image-art methods: colour-dodge sketching, Winnemöller's XDoG, classic and 8-sector Kuwahara (Papari), the symmetric-nearest-neighbour filter, line integral convolution for brush strokes, bilateral filtering, CMYK halftone screens, Bayer and Floyd–Steinberg dithering, and Voronoi mosaics.
 
-- One background GPU thread keeps everything loaded, so a slider move only redraws the image. On a mid-range phone (Mali-G720) a 1280 px preview renders in **13 ms on average**, and the slowest style takes 52 ms.
+- On a mid-range phone (Mali-G720), a 1280 px preview renders in **13 ms on average**, and the slowest style takes 52 ms.
 - Wide effects read from pre-blurred copies of the photo (mipmaps), so they cost the same at any size. Sizes are set relative to the image, which is why the 3200 px export matches the preview.
 
 ## Add your own style
@@ -75,16 +109,21 @@ You write one function, `vec3 effect(vec2 uv)`. The shared helpers in [`prelude.
 - Needs Android 10 or newer and a GPU with OpenGL ES 3.0 (almost every phone from the last 8+ years).
 - The preview works at up to 1280 px. Export works at up to 3200 px, or the GPU's limit if that is lower.
 - Ink outlines and Floyd–Steinberg dithering run on the CPU, so they add a little time to each update.
+- The app started from a research blueprint. [`AUDIT.md`](AUDIT.md) records the problems found in it and how they were fixed.
 
 ## Build from source
 
 Requirements: JDK 17+ and the Android SDK (platform 36). The NDK is optional; it's only needed for the shader check.
 
 ```bash
+git clone https://github.com/R-Dilipkumar/photo-art-filters-android.git
+```
+
+```bash
 ./gradlew assembleDebug
 ```
 
-The APK is written to `app/build/outputs/apk/debug/`.
+The APK is written to `app/build/outputs/apk/debug/`. For a signed release build, add a `keystore.properties` in the project root (`storeFile`, `storePassword`, `keyAlias`, `keyPassword`) and run `./gradlew assembleRelease`. Without that file, the release build is unsigned.
 
 Check that every shader compiles and its header is valid (uses `glslc` from the Android NDK):
 
@@ -106,4 +145,4 @@ bash tools/contact_sheets.sh path/to/photo.jpg
 
 ## License
 
-MIT. See [LICENSE](LICENSE).
+MIT, © 2026 Dilipkumar R. See [LICENSE](LICENSE).
