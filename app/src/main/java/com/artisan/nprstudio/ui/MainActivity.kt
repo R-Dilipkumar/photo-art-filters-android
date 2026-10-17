@@ -2,20 +2,36 @@ package com.artisan.nprstudio.ui
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
-import androidx.activity.enableEdgeToEdge
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.darkColorScheme
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -23,10 +39,10 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.artisan.nprstudio.model.NprStyle
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -57,24 +73,32 @@ fun NprStudioScreen(viewModel: NprViewModel = viewModel()) {
                 modifier = Modifier
                     .fillMaxWidth()
                     .statusBarsPadding()
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
+                    .padding(horizontal = 16.dp, vertical = 10.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 // weight(1f): the buttons keep their size, the title wraps if space is short.
                 Column(modifier = Modifier.weight(1f)) {
-                    Text("Artisan NPR Studio", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                    Text(state.config.style.subtitle, style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+                    Text(
+                        state.shader?.name ?: "Artisan NPR Studio",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        "${state.categories.getOrNull(state.categoryIndex).orEmpty()} · ${state.shaderCount} styles",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.Gray
+                    )
                 }
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedButton(onClick = {
-                        photoPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
-                    }) {
-                        Text("Load Photo")
-                    }
-                    Button(onClick = { viewModel.exportHighRes() }) {
-                        Text("Export")
-                    }
+                OutlinedButton(onClick = {
+                    photoPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                }) {
+                    Text("Load")
+                }
+                Button(onClick = { viewModel.exportHighRes() }) {
+                    Text("Export")
                 }
             }
         }
@@ -82,15 +106,15 @@ fun NprStudioScreen(viewModel: NprViewModel = viewModel()) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
-                .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+                .padding(padding),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            // 1. Interactive Canvas Preview (Hold to compare with original)
+            // Preview. Press and hold to see the original photo.
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f)
+                    .padding(horizontal = 12.dp)
                     .background(Color(0xFF18181B), RoundedCornerShape(16.dp))
                     .pointerInput(Unit) {
                         detectTapGestures(
@@ -105,86 +129,58 @@ fun NprStudioScreen(viewModel: NprViewModel = viewModel()) {
             ) {
                 val displayBmp = if (showOriginal) state.sourcePreview else state.renderedPreview
                 displayBmp?.let { bmp ->
+                    val image = remember(bmp) { bmp.asImageBitmap() }
                     Image(
-                        bitmap = bmp.asImageBitmap(),
-                        contentDescription = "NPR Canvas",
-                        modifier = Modifier.fillMaxSize().padding(8.dp),
+                        bitmap = image,
+                        contentDescription = "Styled image",
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(6.dp),
                         contentScale = ContentScale.Fit
                     )
                 }
                 if (state.isProcessing) {
-                    CircularProgressIndicator(modifier = Modifier.size(36.dp))
-                }
-            }
-
-            // 2. Style Selector Carousel
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                NprStyle.entries.forEach { style ->
-                    FilterChip(
-                        selected = state.config.style == style,
-                        onClick = { viewModel.updateStyle(style) },
-                        label = { Text(style.title) }
-                    )
-                }
-            }
-
-            // 3. Mathematical Parameter Sliders
-            Card(
-                shape = RoundedCornerShape(16.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    ParameterSlider(
-                        label = state.config.style.primaryParamLabel,
-                        value = state.config.param1,
-                        onValueChange = { viewModel.updateParams(param1 = it) }
-                    )
-                    ParameterSlider(
-                        label = state.config.style.secondaryParamLabel,
-                        value = state.config.param2,
-                        onValueChange = { viewModel.updateParams(param2 = it) }
-                    )
-                    ParameterSlider(
-                        label = state.config.style.tertiaryParamLabel,
-                        value = state.config.param3,
-                        onValueChange = { viewModel.updateParams(param3 = it) }
-                    )
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text("CPU Sobel Ink Contour Pass", style = MaterialTheme.typography.bodySmall)
-                        Switch(
-                            checked = state.config.useCpuRefinement,
-                            onCheckedChange = { viewModel.updateParams(useCpuRefinement = it) }
-                        )
-                    }
+                    CircularProgressIndicator(modifier = Modifier.size(32.dp))
                 }
             }
 
             state.statusMessage?.let { msg ->
-                Text(msg, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                Text(
+                    msg,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    maxLines = 2,
+                    modifier = Modifier.padding(horizontal = 16.dp)
+                )
             }
-        }
-    }
-}
 
-@Composable
-private fun ParameterSlider(label: String, value: Float, onValueChange: (Float) -> Unit) {
-    Column {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Text(label, style = MaterialTheme.typography.labelMedium)
-            Text("${(value * 100).toInt()}%", style = MaterialTheme.typography.labelSmall)
+            ControlsPanel(
+                shader = state.shader,
+                values = state.values,
+                colors = state.colors,
+                finish = state.finish,
+                post = state.post,
+                onValue = viewModel::setValue,
+                onColor = viewModel::setColor,
+                onFinish = viewModel::setFinish,
+                onPost = viewModel::setPost,
+                onReset = viewModel::reset,
+                onSurprise = viewModel::surprise,
+                modifier = Modifier.padding(horizontal = 12.dp)
+            )
+
+            ShaderStrip(
+                shaders = state.shadersInCategory,
+                selectedId = state.shader?.id,
+                thumbnails = state.thumbnails,
+                onSelect = viewModel::selectShader
+            )
+
+            CategoryDial(
+                categories = state.categories,
+                selected = state.categoryIndex,
+                onSelected = viewModel::selectCategory
+            )
         }
-        Slider(value = value, onValueChange = onValueChange, valueRange = 0f..1f)
     }
 }

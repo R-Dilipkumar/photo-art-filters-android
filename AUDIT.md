@@ -2,6 +2,13 @@
 
 Date: 2026-10-17 · Source: `npr_studio_master_project_blueprint.md`
 
+> **Status (2026-10-17, later the same day):**
+> - **Fixed:** F1–F4 (smear compile error, error checks, long-lived GL thread renderer, render queue); C1–C4; H3–H6; M1–M3, M5, M7, M8; L2.
+> - **Fixed differently from F7:** instead of multi-pass, shaders read pre-blurred mipmap levels and size everything in "preview pixels" (`uScale`). Tap counts stay flat at any export size, and the preview matches the export (H1, H2). Average render: 13 ms at 1280 px on a Mali-G720.
+> - **Still open:** F6 (decode/save hardening; minSdk is now 29, so the crashes are gone) and true multi-pass effects such as a smoothed structure-tensor flow.
+>
+> The 8 blueprint shaders were rewritten into a 134-shader library (see README).
+
 ## Verdict
 
 **Do not build features on this code yet.**

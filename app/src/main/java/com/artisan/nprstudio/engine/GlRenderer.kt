@@ -6,8 +6,7 @@ import android.opengl.EGLConfig
 import android.opengl.EGLExt
 import android.opengl.GLES30
 import android.opengl.GLUtils
-import com.artisan.nprstudio.model.NprFilterConfig
-import com.artisan.nprstudio.model.NprStyle
+import com.artisan.nprstudio.model.Finish
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.withContext
 import java.nio.ByteBuffer
@@ -21,8 +20,11 @@ import java.util.concurrent.Executors
  * thread. The context, shaders and source texture are created once; a slider move only
  * sets uniforms and draws. Output goes into an FBO texture, so its size is free and
  * multi-pass effects can be added later.
+ *
+ * The source texture is mipmapped: shaders sample a pre-blurred level for wide
+ * neighbourhoods, so their cost doesn't grow with export size.
  */
-class GlRenderer : AutoCloseable {
+class GlRenderer(private val vertexSource: String) : AutoCloseable {
 
     private val executor = Executors.newSingleThreadExecutor { Thread(it, "npr-gl") }
     private val glThread = executor.asCoroutineDispatcher()
@@ -31,7 +33,11 @@ class GlRenderer : AutoCloseable {
     private var context = EGL14.EGL_NO_CONTEXT
     private var surface = EGL14.EGL_NO_SURFACE
 
-    private val programs = HashMap<NprStyle, Int>()
+    private class Program(val id: Int) {
+        val locations = HashMap<String, Int>()
+    }
+
+    private val programs = HashMap<String, Program>()
     private var vao = 0
     private var srcTex = 0
     private var dstTex = 0
@@ -54,31 +60,69 @@ class GlRenderer : AutoCloseable {
         if (srcTex == 0) srcTex = newTexture()
         GLES30.glBindTexture(GLES30.GL_TEXTURE_2D, srcTex)
         GLUtils.texImage2D(GLES30.GL_TEXTURE_2D, 0, bitmap, 0)
+        GLES30.glGenerateMipmap(GLES30.GL_TEXTURE_2D)
+        GLES30.glTexParameteri(
+            GLES30.GL_TEXTURE_2D, GLES30.GL_TEXTURE_MIN_FILTER, GLES30.GL_LINEAR_MIPMAP_LINEAR
+        )
         resizeTarget(bitmap.width, bitmap.height)
         checkGl("setSource")
     }
 
-    /** Renders the current source with [config] and returns a new bitmap of the same size. */
-    suspend fun render(config: NprFilterConfig): Bitmap = withContext(glThread) {
+    /**
+     * Renders the current source through [shader] and returns a new bitmap of the same size.
+     *
+     * [scale] is the size of one "preview pixel" in output pixels. By default it is
+     * long side / 1280, so a 3200 px export looks like the 1280 px preview.
+     */
+    suspend fun render(
+        shader: ShaderDef,
+        fragmentSource: String,
+        values: Map<String, Float>,
+        colors: Map<String, Int>,
+        finish: Finish,
+        scale: Float? = null
+    ): Bitmap = withContext(glThread) {
         check(srcTex != 0) { "setSource() must be called first" }
-        val program = programs.getOrPut(config.style) {
-            linkProgram(ShaderLibrary.VERTEX_SHADER, ShaderLibrary.getFragmentShader(config.style))
+        val program = programs.getOrPut(shader.id) {
+            Program(linkProgram(vertexSource, fragmentSource))
+        }
+        fun loc(name: String) = program.locations.getOrPut(name) {
+            GLES30.glGetUniformLocation(program.id, name)
         }
 
         GLES30.glBindFramebuffer(GLES30.GL_FRAMEBUFFER, fbo)
         GLES30.glViewport(0, 0, width, height)
-        GLES30.glUseProgram(program)
+        GLES30.glUseProgram(program.id)
         GLES30.glActiveTexture(GLES30.GL_TEXTURE0)
         GLES30.glBindTexture(GLES30.GL_TEXTURE_2D, srcTex)
-        GLES30.glUniform1i(GLES30.glGetUniformLocation(program, "uTexture"), 0)
-        GLES30.glUniform2f(
-            GLES30.glGetUniformLocation(program, "uTexelSize"),
-            1f / width,
-            1f / height
-        )
-        GLES30.glUniform1f(GLES30.glGetUniformLocation(program, "uParam1"), config.param1)
-        GLES30.glUniform1f(GLES30.glGetUniformLocation(program, "uParam2"), config.param2)
-        GLES30.glUniform1f(GLES30.glGetUniformLocation(program, "uParam3"), config.param3)
+        GLES30.glUniform1i(loc("uTexture"), 0)
+        GLES30.glUniform2f(loc("uTexelSize"), 1f / width, 1f / height)
+        GLES30.glUniform2f(loc("uResolution"), width.toFloat(), height.toFloat())
+        GLES30.glUniform1f(loc("uScale"), scale ?: (maxOf(width, height) / PREVIEW_SIZE))
+        GLES30.glUniform1f(loc("uStrength"), finish.strength)
+        GLES30.glUniform1f(loc("uBrightness"), finish.brightness)
+        GLES30.glUniform1f(loc("uContrast"), finish.contrast)
+        GLES30.glUniform1f(loc("uSaturation"), finish.saturation)
+        for (p in shader.params) {
+            when (p) {
+                is ShaderParam.Slider -> GLES30.glUniform1f(loc(p.uniform), values[p.uniform] ?: p.default)
+                is ShaderParam.Toggle -> GLES30.glUniform1f(
+                    loc(p.uniform), values[p.uniform] ?: if (p.default) 1f else 0f
+                )
+                is ShaderParam.Choice -> GLES30.glUniform1f(
+                    loc(p.uniform), values[p.uniform] ?: p.default.toFloat()
+                )
+                is ShaderParam.ColorPick -> {
+                    val c = colors[p.uniform] ?: p.default
+                    GLES30.glUniform3f(
+                        loc(p.uniform),
+                        ((c shr 16) and 0xFF) / 255f,
+                        ((c shr 8) and 0xFF) / 255f,
+                        (c and 0xFF) / 255f
+                    )
+                }
+            }
+        }
         GLES30.glBindVertexArray(vao)
 
         // Draw in bands so no single GPU job runs long enough to trip the driver watchdog.
@@ -90,7 +134,7 @@ class GlRenderer : AutoCloseable {
         }
         GLES30.glDisable(GLES30.GL_SCISSOR_TEST)
         GLES30.glBindVertexArray(0)
-        checkGl("draw ${config.style}")
+        checkGl("draw ${shader.id}")
 
         // Texture row 0 is the bitmap's top row and glReadPixels row 0 maps back to it,
         // so the two flips cancel and no flip is needed.
@@ -298,7 +342,9 @@ class GlRenderer : AutoCloseable {
 
     private fun eglError() = "0x" + Integer.toHexString(EGL14.eglGetError())
 
-    private companion object {
-        const val BAND_HEIGHT = 256
+    companion object {
+        /** Long side, in pixels, that shader sizes ("preview pixels") are designed for. */
+        const val PREVIEW_SIZE = 1280f
+        private const val BAND_HEIGHT = 256
     }
 }
